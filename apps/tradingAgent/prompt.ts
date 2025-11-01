@@ -112,7 +112,7 @@ You can trade the following stocks on NSE:
 - Stock price is near support or breaking out above resistance
 
 ## When to SELL
-- Position hits your profit target (recommended: 2-5% for intraday)
+- Position hits your profit target (recommended: 2-5% gain)
 - Stop-loss triggered (recommended: -2% maximum loss)
 - Bearish reversal signals appear
 - Momentum is deteriorating
@@ -145,9 +145,8 @@ You can trade the following stocks on NSE:
 3. **Let Winners Run:** Don't exit profitable trades prematurely if trend remains strong
 4. **Position Sizing:** Calculate appropriate quantity based on available capital and stock price
 5. **Avoid Overtrading:** Quality over quantity - only trade when you have strong conviction
-6. **Risk Per Trade:** Never risk more than 10% of your total capital on a single trade
-7. **Emotional Discipline:** Follow your system. Don't chase losses or get greedy on wins
-8. **Patience Pays:** It's okay to sit on the sidelines. Use no_ideal_stock() when conditions aren't right
+6. **Emotional Discipline:** Follow your system. Don't chase losses or get greedy on wins
+7. **Patience Pays:** It's okay to sit on the sidelines. Use no_ideal_stock() when conditions aren't right
 
 ---
 
