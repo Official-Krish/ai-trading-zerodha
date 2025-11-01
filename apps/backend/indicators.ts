@@ -30,8 +30,8 @@ export function getMidPrices(candlesticks: HistoricalData[]) {
 // macd => ema12 = 38 points, ema26 = 24 points
 export function getMacd(prices: number[]) {
 
-    const ema26 = getEma(prices, 26); // [].length = 24
-    let ema12 = getEma(prices, 12); // [].length = 38
+    const ema26 = getEma(prices, 26); 
+    let ema12 = getEma(prices, 12); 
 
     ema12 = ema12.slice(-ema26.length);
 
