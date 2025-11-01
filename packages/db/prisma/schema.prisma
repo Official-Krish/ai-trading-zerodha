@@ -13,3 +13,53 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model Models {
+  id                   String   @id @default(uuid())
+  name                 String   @unique
+  invocationCount      Int      @default(0)
+  invocations          Invocations[]
+  accountIndex         String      
+  portfolioSizes      PortfolioSize[]
+  @@index([name])
+}
+
+model Invocations {
+  id                   String   @id @default(uuid())
+  modelId              String
+  response             String
+  toolCalls            ToolCalls[]
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  model                Models   @relation(fields: [modelId], references: [id])
+}
+
+model ToolCalls {
+  id                   String   @id @default(uuid())
+  invocationId         String
+  toolCallType         ToolCallType
+  metadata             String
+  invocation           Invocations   @relation(fields: [invocationId], references: [id])
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  @@index([invocationId])
+}
+
+model PortfolioSize {
+  id                   String   @id @default(uuid())
+  modelId              String
+  netPortfolio         String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  model                Models   @relation(fields: [modelId], references: [id])
+
+  @@index([modelId])
+}
+
+enum ToolCallType {
+  BUY_STOCK
+  SELL_STOCK
+  HOLD_STOCK
+  NO_IDEA_STOCK
+}

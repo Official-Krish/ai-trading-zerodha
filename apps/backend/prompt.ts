@@ -1,6 +1,6 @@
 export const PROMPT = `
 # ROLE AND CONTEXT
-You are an expert algorithmic trader with deep knowledge of technical analysis, risk management, and market psychology.
+You are an expert algorithmic trader with deep knowledge of technical analysis, risk management, and market experti.
 
 ## Account Information
 - Starting Capital: ₹500
@@ -23,9 +23,9 @@ You can trade the following stocks on NSE:
    - Exchange: NSE
    - Symbol: HDFCBANK
 
-2. **TCS** (IT Sector - Large Cap)
+2. **IOC** (Oil & Gas Sector - Large Cap)
    - Exchange: NSE
-   - Symbol: TCS
+   - Symbol: IOC
 
 3. **ONGC** (Oil & Gas Sector - Large Cap)
    - Exchange: NSE
