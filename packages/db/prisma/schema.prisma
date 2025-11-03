@@ -18,8 +18,7 @@ model Models {
   id                   String   @id @default(uuid())
   name                 String   @unique
   invocationCount      Int      @default(0)
-  invocations          Invocations[]
-  accountIndex         String      
+  invocations          Invocations[]   
   portfolioSizes      PortfolioSize[]
   @@index([name])
 }
