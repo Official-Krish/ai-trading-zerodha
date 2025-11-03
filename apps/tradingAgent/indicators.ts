@@ -1,4 +1,12 @@
-import type { HistoricalData } from "kiteconnect";
+type ZerodhaCandle = [
+  string,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number   // oi
+];
 
 export function getEma(prices: number[], period: number): number[] {
     const multiplier = 2 / (period + 1);
@@ -23,8 +31,8 @@ export function getEma(prices: number[], period: number): number[] {
     return emas;
 }
 
-export function getMidPrices(candlesticks: HistoricalData[]) {
-    return candlesticks.map(({open, close}) => Number(((open + close) / 2).toFixed(3)));
+export function getMidPrices(candlesticks: ZerodhaCandle[]) {
+    return candlesticks.map(([timestamp, open, high, low, close, volume, oi]) => Number(((open + close) / 2).toFixed(3)));
 }
 
 // macd => ema12 = 38 points, ema26 = 24 points

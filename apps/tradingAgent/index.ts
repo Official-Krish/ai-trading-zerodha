@@ -15,19 +15,6 @@ const ai = new GoogleGenAI({
 
 const kc = new KiteConnect({ api_key: apiKey! });
 
-console.log(kc.getLoginURL());
-
-export async function generateSession() {
-    try {
-        const response = await kc.generateSession("123", apiSecret!);
-        console.log(response.access_token);
-        kc.setAccessToken(response.access_token);
-        console.log('Session generated:', response);
-    } catch (err) {
-        console.error('Error generating session:', err);
-    }
-}
-
 async function invokeTradingAgent() {
     const buyStock = {
         name: 'buy_stock',
@@ -108,14 +95,12 @@ async function invokeTradingAgent() {
 
     let ALL_INDICATOR_DATA = "";
     for (const market of MARKETS) {
-        const quote = await kc.getQuote((market.instrumentToken).toString());
-        const five_minute = await getIndicators("5minute", market.instrumentToken, kc);
-        const minute = await getIndicators("minute", market.instrumentToken, kc);
-        const three_minute = await getIndicators("3minute", market.instrumentToken, kc);
+        const five_minute = await getIndicators("5minute", market.instrumentToken);
+        const minute = await getIndicators("minute", market.instrumentToken);
+        const three_minute = await getIndicators("3minute", market.instrumentToken);
 
         ALL_INDICATOR_DATA += `
         MARKET - ${market.exchange} | ${market.symbol}
-        VOLUME - ${quote[market.symbol]?.volume ?? 0}
         
         5m candles (oldest → latest):
         Mid prices - [${five_minute.midPrices.join(",")}]
@@ -144,6 +129,8 @@ async function invokeTradingAgent() {
     .replace("{{AVAILABLE_CASH}}", `$${portfolio.equity?.available.cash ?? 0}`)
     .replace("{{CURRENT_ACCOUNT_VALUE}}", `$${portfolio.equity?.available.live_balance ?? 0}`)
     .replace("{{CURRENT_ACCOUNT_POSITIONS}}", JSON.stringify(openPositions))
+
+    console.log("Enriched Prompt:", enrichedPrompt);
 
     // Send request with function declarations
     const response = await ai.models.generateContent({
@@ -227,8 +214,11 @@ async function invokeTradingAgent() {
 
 
 async function main() {
-    // kc.setAccessToken(process.env.KITE_ACCESS_TOKEN!);
-    await generateSession();
-    await invokeTradingAgent();
-    await updatePortfolioSize(kc);
+    kc.setAccessToken(process.env.KITE_ACCESS_TOKEN!);
+    setInterval(async () => {
+        await invokeTradingAgent();
+        await updatePortfolioSize(kc);
+    }, 1000 * 60);
 }
+
+main();
