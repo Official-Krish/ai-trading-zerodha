@@ -39,9 +39,9 @@ async function invokeTradingAgent() {
         },
     };
 
-    const sellStock = {
-        name: 'sell_stock',
-        description: 'Sells a specified quantity of a stock.',
+    const SellStocks = {
+        name: 'sell_stocks',
+        description: 'Sells all open positions of stocks.',
         parameters: {
             type: Type.OBJECT,
             properties: {
@@ -58,8 +58,8 @@ async function invokeTradingAgent() {
                     description: 'The number of shares to sell.',
                 },
             },
-            required: ['symbol', 'quantity', 'exchange'],
-        },
+            required: ['exchange', 'symbol', 'quantity'],
+        }
     };
 
     const holdStock = {
@@ -121,24 +121,23 @@ async function invokeTradingAgent() {
     }
 
     const portfolio = await kc.getMargins();
-    const openPositions = await kc.getHoldings();
+    const openPositions = (await kc.getPositions()).net.filter(position => position.quantity !== 0);
 
     const enrichedPrompt = PROMPT.replace("{{INVOKATION_TIMES}}", model.invocationCount.toString())
     .replace("{{OPEN_POSITIONS}}", openPositions?.map((position) => `${position.tradingsymbol} ${position.exchange} ${position.pnl}`).join(", ") ?? "")
     .replace("{{ALL_INDICATOR_DATA}}", ALL_INDICATOR_DATA)
-    .replace("{{AVAILABLE_CASH}}", `$${portfolio.equity?.available.cash ?? 0}`)
-    .replace("{{CURRENT_ACCOUNT_VALUE}}", `$${portfolio.equity?.available.live_balance ?? 0}`)
+    .replace("{{AVAILABLE_CASH_FOR_TRADING}}", `$${portfolio.equity?.available.live_balance ?? 0}`)
+    .replace("{{CURRENT_ACCOUNT_VALUE}}", `$${portfolio.equity?.net ?? 0}`)
     .replace("{{CURRENT_ACCOUNT_POSITIONS}}", JSON.stringify(openPositions))
 
-    console.log("Enriched Prompt:", enrichedPrompt);
-
+    console.log("Enriched Prompt: ", enrichedPrompt);
     // Send request with function declarations
     const response = await ai.models.generateContent({
         model: 'gemini-2.5-pro',
         contents: enrichedPrompt,
         config: {
             tools: [{
-                functionDeclarations: [buyStock, sellStock, holdStock, no_ideal_stocks]
+                functionDeclarations: [buyStock, SellStocks, holdStock, no_ideal_stocks]
             }],
             thinkingConfig: {
                 thinkingBudget: -1,
@@ -161,7 +160,6 @@ async function invokeTradingAgent() {
     }
 
     if (response.functionCalls && response.functionCalls.length > 0) {
-        console.log("Function call detected:", response.functionCalls);
         const functionCall = response.functionCalls[0]; 
         if (!functionCall) {
             throw new Error("No function call found in the response.");
@@ -177,8 +175,8 @@ async function invokeTradingAgent() {
                     metadata: JSON.stringify(functionCall.args)
                 }
             })
-        } else if (functionCall.name === 'sell_stock') {
-            sellStocks(kc, functionCall.args?.exchange as string, functionCall.args?.symbol as string, functionCall.args?.quantity as number);
+        } else if (functionCall.name === 'sell_stocks') {
+            sellStocks(kc);
             await prisma.toolCalls.create({
                 data: {
                     invocationId: modelInvocation.id,
@@ -214,11 +212,34 @@ async function invokeTradingAgent() {
 
 
 async function main() {
-    kc.setAccessToken(process.env.KITE_ACCESS_TOKEN!);
     setInterval(async () => {
+        const now = new Date();
+        const istNow = new Date(
+            now.toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        );
+
+        const day = istNow.getDay();
+        const hours = istNow.getHours();
+        const minutes = istNow.getMinutes();
+
+        // Market open: Mon–Fri
+        const isWeekday = day >= 1 && day <= 5;
+
+        // Market time: 9:30 to 15:30
+        const isMarketTime =
+            (hours > 9 || (hours === 9 && minutes >= 30)) &&
+            (hours < 15 || (hours === 15 && minutes <= 30));
+
+        if (!isWeekday || !isMarketTime) {
+            return;
+        }
+        
+        kc.setAccessToken(process.env.KITE_ACCESS_TOKEN!);
         await invokeTradingAgent();
         await updatePortfolioSize(kc);
-    }, 1000 * 60);
+
+    }, 1000 * 60); 
 }
+
 
 main();
