@@ -1,18 +1,25 @@
 import { useMemo } from "react";
-import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid, ResponsiveContainer, ReferenceLine } from "recharts";
 
-const COLORS = [
-  "hsl(210 100% 50%)", "hsl(0 73% 52%)", "hsl(39 100% 50%)", "hsl(142 71% 27%)", "hsl(300 100% 30%)",
-  "hsl(191 100% 39%)", "hsl(340 62% 55%)", "hsl(88 60% 35%)", "hsl(0 65% 43%)", "hsl(207 55% 38%)",
-  "hsl(300 55% 38%)", "hsl(174 60% 40%)", "hsl(60 100% 33%)", "hsl(260 60% 50%)", "hsl(24 100% 45%)",
-  "hsl(0 91% 28%)", "hsl(290 55% 23%)", "hsl(157 53% 35%)", "hsl(216 45% 48%)", "hsl(241 38% 46%)",
-];
+// Map model names to specific colors
+const getModelColor = (modelName: string) => {
+  const lowerName = modelName.toLowerCase();
 
-interface PerformanceChartProps {
-  data: any[];
-}
+  if (lowerName.includes('claude')) {
+    return '#ff6b35';  // claude - orange
+  } else if (lowerName.includes('deepseek')) {
+    return '#4d6bfe';  // deepseek - blue
+  } else if (lowerName.includes('gemini-2.5-pro')) {
+    return '#8b5cf6';  // gemini-2.5-pro - purple
+  }
 
-export default function PerformanceChart({ data }: PerformanceChartProps) {
+  // Fallback for unknown models
+  return '#6b7280';  // gray
+};
+
+type Props = { data: any[] };
+
+export default function PerformanceChart({ data }: Props) {
   const { chartData, seriesNames } = useMemo(() => {
     if (!Array.isArray(data) || data.length === 0) {
       return { chartData: [], seriesNames: [] as string[] };
@@ -33,8 +40,8 @@ export default function PerformanceChart({ data }: PerformanceChartProps) {
     const uniqueTs = Array.from(new Set(points.map((p) => p.t))).sort((a, b) => a - b);
     const gaps: number[] = [];
     for (let i = 1; i < uniqueTs.length; i++) gaps.push(uniqueTs[i] - uniqueTs[i - 1]);
-    const medianGap = gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : 60_000;
-    const tolerance = Math.min(5 * 60_000, Math.max(5_000, Math.floor((medianGap || 60_000) * 1.5)));
+    const medianGap = gaps.length ? gaps.sort((a, b) => a - b)[Math.floor(gaps.length / 2)] : 10 * 60_000; // 10 minutes
+    const tolerance = Math.min(5 * 60_000, Math.max(5_000, Math.floor((medianGap || 10 * 60_000) * 1.5)));
 
     const rows: any[] = [];
     let bucketStart = points[0].t;
@@ -62,55 +69,77 @@ export default function PerformanceChart({ data }: PerformanceChartProps) {
     return { chartData: rows, seriesNames: Array.from(names.values()) };
   }, [data]);
 
-  if (!chartData || chartData.length === 0) {
-    return (
-      <div className="w-full h-[400px] flex items-center justify-center">
-        <p className="text-muted-foreground">No performance data available</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="w-full h-[400px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <LineChart data={chartData} margin={{ top: 8, right: 24, bottom: 8, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.3} />
+    <div className="relative w-full flex flex-1 border-r-2 border-black min-h-0">
+      {/* Title */}
+      <div className="absolute left-1/2 top-2 -translate-x-1/2 z-10">
+        <h2 className="text-sm font-bold text-black font-mono">TOTAL ACCOUNT VALUE</h2>
+      </div>
+
+      <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+        <LineChart
+          data={chartData}
+          margin={{ top: 40, right: 80, bottom: 0, left: 20 }}
+        >
+          <CartesianGrid
+            strokeDasharray="1,3"
+            stroke="rgba(0, 0, 0, 0.1)"
+            strokeWidth={0.5}
+          />
+
           <XAxis
             dataKey="t"
             type="number"
             domain={["auto", "auto"]}
-            tickFormatter={(v: number) => new Date(v).toLocaleTimeString()}
-            tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-            tickLine={false}
-            axisLine={false}
+            tickFormatter={(v: number) => {
+              const date = new Date(v);
+              return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }}
+            tick={{ fontSize: 12, fontFamily: 'monospace', fontWeight: 600, fill: 'rgba(0, 0, 0, 0.8)' }}
+            stroke="rgba(0, 0, 0, 0.4)"
+            strokeWidth={1.5}
           />
+
           <YAxis
-            tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }}
-            domain={[600, 1500]}
-            ticks={[600, 1000, 1500]}
-            tickLine={false}
-            axisLine={false}
-            tickFormatter={(value) => `$${value.toLocaleString()}`}
+            tick={{ fontSize: 12, fontFamily: 'Courier New, monospace', fontWeight: 600, fill: 'rgba(0, 0, 0, 0.8)' }}
+            tickFormatter={(v: number) => `₹${v.toLocaleString()}`}
+            ticks={[500, 1000, 1500]}
+            stroke="rgba(0, 0, 0, 0.4)"
+            strokeWidth={1.5}
           />
+
           <Tooltip
             labelFormatter={(label: any) => new Date(label).toLocaleString()}
             contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "12px",
-              boxShadow: "var(--shadow-elegant)",
+              backgroundColor: 'white',
+              border: '2px solid black',
+              fontFamily: 'monospace',
+              fontSize: '12px'
             }}
-            labelStyle={{ color: "hsl(var(--foreground))", fontWeight: 600 }}
           />
-          <Legend wrapperStyle={{ fontSize: "12px" }} />
-          {seriesNames.map((name, idx) => (
+
+          <Legend
+            wrapperStyle={{
+              fontFamily: 'monospace',
+              fontSize: '12px'
+            }}
+          />
+
+          <ReferenceLine
+            y={1000}
+            stroke="rgba(0, 0, 0, 0.3)"
+            strokeWidth={2}
+            strokeDasharray="5 5"
+          />
+
+          {seriesNames.map((name) => (
             <Line
               key={name}
-              type="basis"
+              type="monotone"
               dataKey={name}
               dot={false}
               strokeWidth={2}
-              stroke={COLORS[idx % COLORS.length]}
+              stroke={getModelColor(name)}
               strokeLinecap="round"
               strokeLinejoin="round"
               isAnimationActive={false}

@@ -4,18 +4,20 @@ import PerformanceChart from "@/components/PerformanceChart";
 import RecentInvocations from "@/components/RecentInvocation";
 import StatsCard from "@/components/StatsCard";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { Label } from "@/components/ui/label";
 
 const BACKEND_URL = "http://localhost:3000";
-const AUTO_REFRESH_INTERVAL = 30000; 
+const AUTO_REFRESH_INTERVAL = 60000;
 
 interface PerformanceData {
-  portfolioValue: number;
-  totalReturn: number;
-  totalInvocations: number;
-  successRate: number;
-  chartData: any[];
+  id: string,
+  modelId: string,
+  netPortfolio: string,
+  createdAt: string,
+  updatedAt: string,
+  model: {
+      name: string,
+      invocationCount: number
+  }
 }
 
 function LoadingCard({ className = "" }: { className?: string }) {
@@ -30,16 +32,13 @@ function LoadingCard({ className = "" }: { className?: string }) {
 }
 
 export default function Index() {
-  const [performanceData, setPerformanceData] = useState<PerformanceData | null>(null);
+  const [performanceData, setPerformanceData] = useState<PerformanceData[] | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const [invocationsData, setInvocationsData] = useState<any[] | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [autoRefresh, setAutoRefresh] = useState(false);
 
-  const fetchData = useCallback(async (isManualRefresh = false) => {
-    if (isManualRefresh) setIsRefreshing(true);
+  const fetchData = useCallback(async () => {
     setError(null);
 
     try {
@@ -63,7 +62,6 @@ export default function Index() {
       setError("Unable to load data. Please try again.");
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   }, []);
 
@@ -72,17 +70,16 @@ export default function Index() {
   }, [fetchData]);
 
   useEffect(() => {
-    if (!autoRefresh) return;
 
     const interval = setInterval(() => {
       fetchData();
     }, AUTO_REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchData]);
+  }, [fetchData]);
 
   const handleRefresh = () => {
-    fetchData(true);
+    fetchData();
   };
 
   if (error && !performanceData) {
@@ -110,36 +107,13 @@ export default function Index() {
         <header className="mb-8 animate-fade-in">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-primary bg-clip-text text-black">
                 Performance Dashboard
               </h1>
               <p className="text-muted-foreground mt-2 flex items-center gap-2">
                 <Activity className="w-4 h-4" />
                 Real-time portfolio & invocation analytics
               </p>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-card px-4 py-2 rounded-lg border border-border shadow-elegant">
-                <Switch
-                  id="auto-refresh"
-                  checked={autoRefresh}
-                  onCheckedChange={setAutoRefresh}
-                />
-                <Label htmlFor="auto-refresh" className="text-sm cursor-pointer">
-                  Auto-refresh
-                </Label>
-              </div>
-              
-              <Button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                variant="outline"
-                size="icon"
-                className="shadow-elegant"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
             </div>
           </div>
         </header>
@@ -155,29 +129,18 @@ export default function Index() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8 animate-fade-in">
             <StatsCard
               title="Portfolio Value"
-              value={`$${performanceData.portfolioValue.toLocaleString()}`}
+              value={`$${performanceData[performanceData.length - 1]?.netPortfolio}`}
               icon={TrendingUp}
-              trend={performanceData.totalReturn}
+              trend={performanceData.length >= 2 ?
+                ((Number(performanceData[performanceData.length - 1]?.netPortfolio) - Number(performanceData[performanceData.length - 2]?.netPortfolio)) / Number(performanceData[performanceData.length - 2]?.netPortfolio)) * 100
+                : 0}
               gradient="from-primary to-primary-glow"
             />
             <StatsCard
-              title="Total Return"
-              value={`${performanceData.totalReturn >= 0 ? '+' : ''}${performanceData.totalReturn.toFixed(2)}%`}
-              icon={Activity}
-              trend={performanceData.totalReturn}
-              gradient="from-secondary to-primary"
-            />
-            <StatsCard
               title="Total Invocations"
-              value={performanceData.totalInvocations.toLocaleString()}
+              value={String(performanceData[performanceData.length - 1]?.model.invocationCount)}
               icon={Clock}
               gradient="from-accent to-primary"
-            />
-            <StatsCard
-              title="Success Rate"
-              value={`${performanceData.successRate.toFixed(1)}%`}
-              icon={Activity}
-              gradient="from-success to-secondary"
             />
           </div>
         ) : null}
@@ -198,7 +161,7 @@ export default function Index() {
                   Live
                 </div>
               </div>
-              <PerformanceChart data={performanceData?.chartData || []} />
+              <PerformanceChart data={performanceData || []} />
             </div>
 
             <div className="bg-card shadow-elegant rounded-2xl p-6 border border-border hover:shadow-hover transition-all duration-300">
@@ -213,7 +176,7 @@ export default function Index() {
           <div className="mt-8 text-center text-sm text-muted-foreground animate-fade-in">
             Last updated:{" "}
             <span className="font-medium text-foreground">
-              {lastUpdated.toLocaleString()}
+              {String(lastUpdated)}
             </span>
           </div>
         )}

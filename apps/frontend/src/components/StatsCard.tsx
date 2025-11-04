@@ -11,7 +11,7 @@ interface StatsCardProps {
 
 export default function StatsCard({ title, value, icon: Icon, trend, gradient }: StatsCardProps) {
   return (
-    <div className="bg-card rounded-2xl p-6 border border-border shadow-elegant hover:shadow-hover transition-all duration-300 group">
+    <div className="bg-card rounded-2xl p-6 border border-border shadow-elegant transition-all duration-300 group">
       <div className="flex items-start justify-between mb-4">
         <div className={`p-3 rounded-xl bg-linear-to-br ${gradient} shadow-lg`}>
           <Icon className="w-5 h-5 text-white" />
@@ -31,7 +31,7 @@ export default function StatsCard({ title, value, icon: Icon, trend, gradient }:
       </div>
       <div className="space-y-1">
         <p className="text-sm text-muted-foreground font-medium">{title}</p>
-        <p className="text-2xl font-bold text-foreground group-hover:bg-gradient-primary group-hover:bg-clip-text group-hover:text-transparent transition-all duration-300">
+        <p className="text-2xl font-bold text-foreground transition-all duration-300">
           {value}
         </p>
       </div>
