@@ -48,7 +48,7 @@ app.get("/performance", async (req, res) => {
         },
         include: {
             model: {
-                select: { name: true },
+                select: { name: true, invocationCount: true },
             },
         },
     });
@@ -74,4 +74,8 @@ app.get("/invocations", async (req, res) => {
     if (!isFresh && !invocationsRefreshInFlight) {
         void refreshInvocations(take);
     }
+});
+
+app.listen(3000, () => {
+    console.log("Backend API server running on http://localhost:3000");
 });
