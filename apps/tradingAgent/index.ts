@@ -8,6 +8,7 @@ import { MARKETS } from "./market";
 import { getIndicators } from "./stockdata";
 import { prisma } from "@ai-trading/db/client";
 import { updatePortfolioSize } from "./priceTracker";
+import axios from "axios";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENAI_API_KEY
@@ -98,10 +99,28 @@ async function invokeTradingAgent() {
         const five_minute = await getIndicators("5minute", market.instrumentToken);
         const minute = await getIndicators("minute", market.instrumentToken);
         const three_minute = await getIndicators("3minute", market.instrumentToken);
+        const stock_price = await axios.post("https://kite.zerodha.com/oms/margins/orders", 
+        [
+            {
+                exchange: market.exchange,
+                tradingsymbol: market.symbol,
+                transaction_type: "BUY",
+                variety: "regular",
+                order_type: "MARKET",
+                product: "MIS",
+                quantity: 1
+            }
+        ],
+        {
+            headers: {
+                "Authorization": process.env.KITE_AUTH_TOKEN!
+            }
+        });
 
         ALL_INDICATOR_DATA += `
         MARKET - ${market.exchange} | ${market.symbol}
-        
+        PRICE OF 1 SHARE IF YOU WANT TO BUY - ₹${stock_price.data.data[0].total}
+
         5m candles (oldest → latest):
         Mid prices - [${five_minute.midPrices.join(",")}]
         EMA20 - [${five_minute.ema20s.join(",")}]
@@ -126,8 +145,8 @@ async function invokeTradingAgent() {
     const enrichedPrompt = PROMPT.replace("{{INVOKATION_TIMES}}", model.invocationCount.toString())
     .replace("{{OPEN_POSITIONS}}", openPositions?.map((position) => `${position.tradingsymbol} ${position.exchange} ${position.pnl}`).join(", ") ?? "")
     .replace("{{ALL_INDICATOR_DATA}}", ALL_INDICATOR_DATA)
-    .replace("{{AVAILABLE_CASH_FOR_TRADING}}", `$${portfolio.equity?.available.live_balance ?? 0}`)
-    .replace("{{CURRENT_ACCOUNT_VALUE}}", `$${portfolio.equity?.net ?? 0}`)
+    .replace("{{AVAILABLE_CASH_FOR_TRADING}}", `₹${portfolio.equity?.available.live_balance ?? 0}`)
+    .replace("{{CURRENT_ACCOUNT_VALUE}}", `₹${portfolio.equity?.net ?? 0}`)
     .replace("{{CURRENT_ACCOUNT_POSITIONS}}", JSON.stringify(openPositions))
 
     console.log("Enriched Prompt: ", enrichedPrompt);
@@ -139,10 +158,6 @@ async function invokeTradingAgent() {
             tools: [{
                 functionDeclarations: [buyStock, SellStocks, holdStock, no_ideal_stocks]
             }],
-            thinkingConfig: {
-                thinkingBudget: -1,
-                includeThoughts: true,
-            }
         },
     });
 

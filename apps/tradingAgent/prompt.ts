@@ -19,13 +19,13 @@ Live Positions & Performance: {{CURRENT_ACCOUNT_POSITIONS}}
 # TRADING UNIVERSE
 You can trade the following stocks on NSE:
 
-1. **HPL** (Oil & Gas Sector - Large Cap)
+1. **SCHNEIDER** (Electrical Sector - Large Cap)
    - Exchange: NSE
-   - Symbol: HPL
+   - Symbol: SCHNEIDER
 
-2. **ADANIPOWER** (Power Sector - Large Cap)
+2. **CDSL** (Financial Services Sector - Large Cap)
    - Exchange: NSE
-   - Symbol: ADANIPOWER
+   - Symbol: CDSL
 
 3. **ONGC** (Oil & Gas Sector - Large Cap)
    - Exchange: NSE
@@ -81,7 +81,6 @@ You can trade the following stocks on NSE:
 1. **Single Position Limit:** Hold exactly 0 or 1 stock position at any time. Never hold multiple stocks simultaneously.
 2. **Position Closure:** To switch positions, you MUST close all existing positions first using sell_stock(), then open a new position with buy_stock().
 3. **Whole Shares Only:** All quantities must be positive integers. No fractional shares allowed.
-4. If the loss on any position exceeds -2%, you must sell immediately.
 
 ## Cash Management
 4. **Minimum Reserve:** Always maintain at least ₹50 in cash. Never let available cash drop below this threshold.
